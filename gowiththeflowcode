@@ -1,0 +1,71 @@
+#include <iostream>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
+
+class HeatFlow {
+private:
+    vector<double> temperatures;
+    double k;
+    vector<pair<int, double>> sources; // pair: (location, strength)
+
+public:
+    HeatFlow(double initialTemp, int numSections, double kValue, vector<pair<int, double>> sourcesList)
+        : k(kValue), sources(move(sourcesList)) {
+        temperatures.assign(numSections, initialTemp);
+    }
+
+    void tick(double timeStep) {
+        vector<double> newTemperatures = temperatures;
+
+        for (size_t i = 0; i < temperatures.size(); ++i) {
+            double totalChange = 0.0;
+
+            // Calculate change in temperature due to adjacent sections
+            if (i > 0)
+                totalChange += k * (temperatures[i - 1] - temperatures[i]);
+            if (i < temperatures.size() - 1)
+                totalChange += k * (temperatures[i + 1] - temperatures[i]);
+
+            // Calculate change in temperature due to sources or sinks
+            for (const auto& source : sources) {
+                if (i == source.first)
+                    totalChange += source.second;
+            }
+
+            // Update temperature for the next time step
+            newTemperatures[i] += totalChange * timeStep;
+        }
+
+        temperatures = newTemperatures;
+    }
+
+    void pretty_print() const {
+        for (size_t i = 0; i < temperatures.size(); ++i) {
+            cout << "Section " << i + 1 << ": " << fixed << setprecision(2) << temperatures[i] << "°C\n";
+        }
+    }
+};
+
+int main() {
+    // Example usage
+    double initialTemp = 20.0;
+    int numSections = 5;
+    double kValue = 0.1;
+    vector<pair<int, double>> sources = {{1, 2.0}, {3, -1.0}}; // Example sources at locations 1 and 3
+
+    HeatFlow rod(initialTemp, numSections, kValue, sources);
+
+    cout << "Initial Temperatures:\n";
+    rod.pretty_print();
+
+    // Perform simulation steps
+    for (int i = 0; i < 3; ++i) {
+        rod.tick(1.0); // Assuming time step of 1 second
+        cout << "\nTemperatures after time step " << i + 1 << ":\n";
+        rod.pretty_print();
+    }
+
+    return 0;
+}
